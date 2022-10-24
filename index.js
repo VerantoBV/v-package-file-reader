@@ -1,7 +1,8 @@
 const fs = require("node:fs");
 const readXlsxFile = { readSheetNames } = require("read-excel-file/node");
 const { createWorker } = require("tesseract.js");
- this.worker
+const Jimp = require("jimp");
+
 const imageTypes = [ "apng", "avif", "gif", "jpg", "jpeg", "jfif", "pjpeg", "pjp", "png", "svg", "webp" ]
 
 module.exports = class Extractor {
@@ -18,6 +19,7 @@ module.exports = class Extractor {
     const arr = path.split(/[\/\\]/);
     return {
       path: arr.join("/"),
+      dump: `./dump/${arr[arr.length - 1]}`,
       name: arr[arr.length-1].split(".")[0],
       ext: arr[arr.length-1].split(".")[1],
       converted: false,
@@ -33,20 +35,31 @@ module.exports = class Extractor {
     return { meta, read: () => this.read(meta) }
   }
 
-  read = async ({ ext, path }) => {
+  read = async ({ path, dump, ext }) => {
     if (imageTypes.includes(ext)) ext = "image";
     if (!this.store[path].converted) switch (ext) {
+      case "pdf":
+
+      break;
       case "image":
         console.log("image found");
+        console.log("grayscale the given image");
+        Jimp.read(path, (e, f) => {
+          f
+            .clone()
+            .greyscale()
+            .write(dump)
+        })
+        console.log("initialize tesseract worker");
         await this.worker.load();
         await this.worker.loadLanguage('nld');
         await this.worker.initialize('nld');
-        const { data: { text } } = await this.worker.recognize(path);
+        console.log("worker started reading image");
+        const { data: { text } } = await this.worker.recognize(dump);
+        console.log("worker finished reading image");
         this.store[path].results = text;
         this.store[path].converted = true;
-      break;
-      case "pdf":
-
+        console.log("results stored within the cache");
       break;
       case "xlsx":
         this.store[path].sheets = await readSheetNames(path);
@@ -58,6 +71,7 @@ module.exports = class Extractor {
         console.error("[file-reader:error] invalid file extention: " + ext);
       break;
     }
+    console.log("----------------------------------------------------");
     return this.store[path]
   }
 
