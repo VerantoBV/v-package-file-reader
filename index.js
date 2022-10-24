@@ -42,24 +42,25 @@ module.exports = class Extractor {
 
       break;
       case "image":
-        console.log("image found");
-        console.log("grayscale the given image");
+        console.log("- started refactoring image");
         Jimp.read(path, (e, f) => {
           f
             .clone()
             .greyscale()
             .write(dump)
         })
-        console.log("initialize tesseract worker");
+        console.log("- finished refactoring image");
+        console.log("- started initializing text extraction worker");
         await this.worker.load();
         await this.worker.loadLanguage('nld');
         await this.worker.initialize('nld');
-        console.log("worker started reading image");
+        console.log("- started text extraction from the image");
         const { data: { text } } = await this.worker.recognize(dump);
-        console.log("worker finished reading image");
+        console.log("- finished text extraction from the image");
+        console.log("- started memoization of the results the worker delivered");
         this.store[path].results = text;
         this.store[path].converted = true;
-        console.log("results stored within the cache");
+        console.log("- finished memoization of the results the worker delivered");
       break;
       case "xlsx":
         this.store[path].sheets = await readSheetNames(path);
