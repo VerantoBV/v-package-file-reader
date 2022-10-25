@@ -2,6 +2,7 @@ const fs = require("node:fs");
 const readXlsxFile = { readSheetNames } = require("read-excel-file/node");
 const { createWorker } = require("tesseract.js");
 const Jimp = require("jimp");
+const pdf = require("pdf-parse");
 
 const imageTypes = [ "apng", "avif", "gif", "jpg", "jpeg", "jfif", "pjpeg", "pjp", "png", "svg", "webp" ]
 
@@ -39,16 +40,30 @@ module.exports = class Extractor {
     if (imageTypes.includes(ext)) ext = "image";
     if (!this.store[path].converted) switch (ext) {
       case "pdf":
-
+          let dataBuffer = fs.readFileSync(path);
+          pdf(dataBuffer).then(function(data){
+            // number of pages
+            console.log(data.numpages);
+            // number of rendered pages
+            console.log(data.numrender);
+            // PDF info
+            console.log(data.info);
+            // PDF metadata
+            console.log(data.metadata);
+            // PDF.js version
+            // check https://mozilla.github.io/pdf.js/getting_started/
+            console.log(data.version);
+            // PDF text
+            console.log(data.text);
+          });
       break;
       case "image":
         console.log("- started refactoring image");
-        Jimp.read(path, (e, f) => {
-          f
-            .clone()
-            .greyscale()
-            .write(dump)
-        })
+        const image = await Jimp.read(path)
+        image
+          .clone()
+          .greyscale()
+          .write(dump)
         console.log("- finished refactoring image");
         console.log("- started initializing text extraction worker");
         await this.worker.load();
