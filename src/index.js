@@ -91,4 +91,8 @@ module.exports = class Extractor {
     return this.store[path]
   }
 
+  process = (filedata) => {
+    console.log(filedata)
+  }
+
 }
